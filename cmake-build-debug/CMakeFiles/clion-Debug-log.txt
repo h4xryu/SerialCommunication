@@ -1,0 +1,19 @@
+/snap/clion/250/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/250/bin/ninja/linux/x64/ninja -G Ninja -S /home/student/CLionProjects/untitled4 -B /home/student/CLionProjects/untitled4/cmake-build-debug
+CMake Error at CMakeLists.txt:3 (find_package):
+  By not providing "FindLibSerial.cmake" in CMAKE_MODULE_PATH this project
+  has asked CMake to find a package configuration file provided by
+  "LibSerial", but CMake did not find one.
+
+  Could not find a package configuration file provided by "LibSerial" with
+  any of the following names:
+
+    LibSerialConfig.cmake
+    libserial-config.cmake
+
+  Add the installation prefix of "LibSerial" to CMAKE_PREFIX_PATH or set
+  "LibSerial_DIR" to a directory containing one of the above files.  If
+  "LibSerial" provides a separate development package or SDK, be sure it has
+  been installed.
+
+
+-- Configuring incomplete, errors occurred!
