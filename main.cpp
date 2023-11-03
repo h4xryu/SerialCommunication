@@ -81,8 +81,8 @@ int main(int argc, char **argv)
     }
 
     unsigned char buffer[1024];
-    std::vector<std::string> dataBuff;
-    std::string tmp = "";
+    std::vector<std::vector<int>> dataBuff;
+    std::vector<int> tmp;
     int tmp2 = 0;
     bool stx = false;
     bool isfull = false;
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "read(%s): %s\n", device, strerror(errno));
             break;
         }
-        if (num_bytes < 3) {
+        if (num_bytes < 2) {
 
             break;
         }
@@ -118,12 +118,12 @@ int main(int argc, char **argv)
 
                     dataBuff.push_back(tmp);
                     stx = false;
-                    tmp = "";
+                    tmp.clear();
                     isfull = false;
                     continue;
                 }
                 if (stx && isprint(buffer[i])) {
-                    tmp += buffer[i];
+                    tmp.push_back(buffer[i]);
 
                     isfull = true;
                     continue;
@@ -141,8 +141,10 @@ int main(int argc, char **argv)
             }
         }
     }
-    for(int i : dataBuff){
-        std::cout << i << std::endl;
+    for(std::vector<int> v : dataBuff){
+        for(int i : v){
+            std::cout << i << std::endl;
+        }
     }
     close(fd);
 
