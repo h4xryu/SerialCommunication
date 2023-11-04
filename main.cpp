@@ -10,38 +10,48 @@
 
 int main(int argc, char **argv)
 {
-    const char *device = "/dev/ttyACM1";
+    const char *device = "/dev/ttyACM0";
     if (argv[1]) {
         device = argv[1];
     }
 
     int fd = open(device, O_RDWR | O_NOCTTY | O_NDELAY);
+    //O_RDWR : 파일을 읽기/쓰기용으로 연다, O_NDELAY : non-blocking 입추력 옵션 읽고 쓸 데이터 없으면 -1 리턴
+    // O_NOCTTY : ctrl + c 무시
     if (fd == -1) {
         fprintf(stderr, "open(%s): %s\n", device, strerror(errno));
-        return 1;
+        const char *device2 = "/dev/ttyACM0";
+        fd = open(device2, O_RDWR | O_NOCTTY | O_NDELAY);
+        if (fd == -1) {
+            std::cout << "No connection" << std::endl;
+            return 1;
+        }
     }
 
     struct termios tty;
 
-    if (tcgetattr(fd, &tty) != 0)
+    if (tcgetattr(fd, &tty) != 0) //메모리 포인터 주소 확인해서 열려있는지 없는지 속성 값 반환
     {
         fprintf(stderr, "tcgetattr(%s): %s\n", device, strerror(errno));
         return 1;
     }
 
-    tty.c_cflag &= ~PARENB;
-    tty.c_cflag &= ~CSTOPB;
+
+    //control mode flag
+
+    tty.c_cflag &= ~PARENB; //패리티 없음
+    tty.c_cflag &= ~CSTOPB; // 1개의 정지 비트
     tty.c_cflag &= ~CSIZE;
-    tty.c_cflag |= CS8;
+    tty.c_cflag |= CS8; //8비트
     tty.c_cflag &= ~CRTSCTS;
     tty.c_cflag |= CREAD | CLOCAL;
 
-    tty.c_lflag &= ~ICANON;
-    tty.c_lflag &= ~ECHO;
+    tty.c_lflag &= ~ICANON;//incannical한 명령어 (\n단위 아님)
+    tty.c_lflag &= ~ECHO; //에코설정
     tty.c_lflag &= ~ECHOE;
     tty.c_lflag &= ~ECHONL;
     tty.c_lflag &= ~ISIG;
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY); //시작비트 종료비트 미사용
     tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
 
     tty.c_oflag &= ~OPOST;
@@ -71,8 +81,9 @@ int main(int argc, char **argv)
     }
 
 
+
     int n = write(fd, data.c_str(), data.size());
-    n = write(fd, data.c_str(), data.size()); //채터
+
 
     if (n < 0) {
         fprintf(stderr, "write(%s): %s\n", device, strerror(errno));
@@ -80,9 +91,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    unsigned char buffer[1024];
-    std::vector<std::vector<int>> dataBuff;
-    std::vector<int> tmp;
+    unsigned char buffer[100];
+    std::vector<double> dataBuff;
+    std::string tmp;
     int tmp2 = 0;
     bool stx = false;
     bool isfull = false;
@@ -90,6 +101,7 @@ int main(int argc, char **argv)
 
     while(1){
         ssize_t num_bytes = read(fd, &buffer, sizeof(buffer));
+
         if (num_bytes == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 continue;
@@ -97,40 +109,34 @@ int main(int argc, char **argv)
             fprintf(stderr, "read(%s): %s\n", device, strerror(errno));
             break;
         }
-        if (num_bytes < 2) {
 
-            break;
-        }
         if (num_bytes > 0) {
             printf("%zi bytes received:\n", num_bytes);
-
-
 
             printf(" (");
             for (ssize_t i = 0; i < num_bytes; ++i) {
                 printf(" %c", isprint(buffer[i]) ? buffer[i] : '?');
+
                 if (buffer[i] == '@'){
                     stx = true;
                     continue;
                 }
                 if (buffer[i] == '#' && stx){
 
-
-                    dataBuff.push_back(tmp);
+                    std::cout << stoi(tmp);
+                    dataBuff.push_back(stoi(tmp));
                     stx = false;
                     tmp.clear();
                     isfull = false;
                     continue;
                 }
                 if (stx && isprint(buffer[i])) {
-                    tmp.push_back(buffer[i]);
+                    unsigned char ttmp;
+                    ttmp = buffer[i];
+                    tmp += ttmp;
 
                     isfull = true;
                     continue;
-                }
-                if(buffer[i] == '$'){
-                    breakPoint = true;
-                    break;
                 }
 
             }
@@ -141,11 +147,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    for(std::vector<int> v : dataBuff){
-        for(int i : v){
-            std::cout << i << std::endl;
-        }
-    }
+
     close(fd);
 
     return 0;
